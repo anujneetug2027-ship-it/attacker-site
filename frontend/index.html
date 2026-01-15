@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Security Education Demo</title>
+    <title>Security Education Demo - Brute Force Vulnerability</title>
     <style>
         * {
             box-sizing: border-box;
@@ -89,6 +89,7 @@
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
             width: 100%;
+            margin-bottom: 10px;
         }
         
         button:hover {
@@ -101,6 +102,14 @@
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
+        }
+        
+        .full-attack-btn {
+            background: linear-gradient(135deg, #f5515f 0%, #c62828 100%);
+        }
+        
+        .full-attack-btn:hover {
+            background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
         }
         
         .results {
@@ -176,6 +185,15 @@
             border-radius: 0 5px 5px 0;
         }
         
+        .config-info {
+            background: #e1f5fe;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-size: 14px;
+            border-left: 4px solid #03a9f4;
+        }
+        
         footer {
             text-align: center;
             margin-top: 30px;
@@ -209,20 +227,88 @@
             font-weight: bold;
         }
         
-        .config-info {
-            background: #e1f5fe;
+        .progress-container {
+            margin: 20px 0;
+            padding: 20px;
+            background: #e3f2fd;
+            border-radius: 10px;
+            border-left: 4px solid #2196F3;
+            display: none;
+        }
+        
+        .progress-container.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        
+        .progress-bar {
+            height: 20px;
+            background: #ddd;
+            border-radius: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+            transition: width 0.5s;
+        }
+        
+        .attack-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .attack-controls button {
+            flex: 1;
+            padding: 10px;
+            margin: 0;
+        }
+        
+        .stop-btn {
+            background: linear-gradient(135deg, #f5515f 0%, #c62828 100%);
+        }
+        
+        .password-test {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 5px;
+        }
+        
+        .password-test-input {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .password-test-input input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .password-test-input button {
+            width: auto;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+        }
+        
+        .time-estimate {
+            background: #ffecb3;
             padding: 15px;
             border-radius: 5px;
             margin: 15px 0;
-            font-size: 14px;
-            border-left: 4px solid #03a9f4;
+            border-left: 4px solid #ff9800;
         }
         
-        .config-info code {
-            background: #fff;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: monospace;
+        .time-estimate h4 {
+            color: #e65100;
+            margin-bottom: 10px;
         }
     </style>
 </head>
@@ -231,7 +317,7 @@
         <div class="card">
             <div class="header">
                 <h1>🔒 Security Education Demo</h1>
-                <p>Understanding Password Vulnerability</p>
+                <p>Understanding Password Vulnerability & Brute Force Attacks</p>
             </div>
             
             <div class="warning-banner">
@@ -245,7 +331,8 @@
             <div class="config-info">
                 <strong>System Configuration:</strong><br>
                 • Vulnerable Site: <code>https://vulnerable-site-noch.onrender.com</code><br>
-                • Attacker Backend: <code>https://attacker-site.onrender.com</code>
+                • Attacker Backend: <code>https://attacker-site.onrender.com</code><br>
+                • Target: 4-digit PINs (0000 to 9999)
             </div>
             
             <div class="demo-steps">
@@ -268,12 +355,51 @@
                 <input type="email" id="email" placeholder="user@example.com">
             </div>
             
-            <button id="demoBtn" onclick="startDemo()">Start Educational Demo</button>
+            <button id="demoBtn" onclick="startDemo()">Start Educational Demo (Quick Test)</button>
+            
+            <button class="full-attack-btn" onclick="startFullBruteForce()">🚀 Start FULL Brute Force (10,000 combinations)</button>
+            <small style="display: block; text-align: center; color: #666; margin-bottom: 20px;">
+                ⚠️ Tests ALL possible combinations (takes 8-15 minutes)
+            </small>
+            
+            <div class="password-test">
+                <h4>🔍 Test Specific Password:</h4>
+                <p>Try guessing the password manually:</p>
+                <div class="password-test-input">
+                    <input type="text" id="testPassword" placeholder="Enter 4-digit PIN" maxlength="4" pattern="\d{4}">
+                    <button onclick="testSpecificPassword()">Test This Password</button>
+                </div>
+                <div id="passwordTestResult" style="margin-top: 10px;"></div>
+            </div>
+            
+            <div class="time-estimate">
+                <h4>⏱️ Time Estimate for Password: <span id="knownPassword">1918</span></h4>
+                <p>Given password <strong>1918</strong> (position 1,918 in sequence):</p>
+                <ul>
+                    <li><strong>Educational Demo Speed:</strong> ~5 attempts/second → <strong>6 minutes 22 seconds</strong></li>
+                    <li><strong>Full Attack Speed:</strong> ~50 attempts/second → <strong>38 seconds</strong></li>
+                    <li><strong>Real Attack Speed:</strong> ~100 attempts/second → <strong>19 seconds</strong></li>
+                </ul>
+                <p><em>This demonstrates how quickly 4-digit PINs can be cracked!</em></p>
+            </div>
             
             <div id="loading" class="loading" style="display: none;">
                 <div class="spinner"></div>
                 <p>Simulating brute-force attack for educational purposes...</p>
                 <p><small>Testing common 4-digit PIN combinations</small></p>
+            </div>
+            
+            <div id="fullAttackProgress" class="progress-container">
+                <h3>🚀 Full Brute Force Attack in Progress</h3>
+                <p>Testing ALL 10,000 combinations for: <strong id="attackEmail"></strong></p>
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill"></div>
+                </div>
+                <div id="progressText">Starting attack...</div>
+                <div class="attack-controls">
+                    <button onclick="checkProgress()">🔄 Check Progress</button>
+                    <button class="stop-btn" onclick="stopAttack()">⏹️ Stop Attack</button>
+                </div>
             </div>
             
             <div id="results" class="results">
@@ -304,16 +430,23 @@
         <footer>
             <p>This is an educational tool to understand cybersecurity vulnerabilities.</p>
             <p>Always use this knowledge ethically and legally.</p>
+            <p style="margin-top: 10px; font-size: 12px;">
+                Vulnerable Site: <code>https://vulnerable-site-noch.onrender.com</code> | 
+                Attacker Site: <code>https://attacker-site.onrender.com</code>
+            </p>
         </footer>
     </div>
 
     <script>
         // =============================================
-        // ADD YOUR BACKEND URL HERE
+        // CONFIGURATION
         // =============================================
         const BACKEND_URL = 'https://attacker-site.onrender.com';
-        // =============================================
+        let progressInterval = null;
         
+        // =============================================
+        // EDUCATIONAL DEMO (QUICK TEST)
+        // =============================================
         async function startDemo() {
             const email = document.getElementById('email').value.trim();
             const demoBtn = document.getElementById('demoBtn');
@@ -333,11 +466,9 @@
             demoBtn.textContent = 'Running Demo...';
             loading.style.display = 'block';
             results.classList.remove('show');
+            hideFullAttackProgress();
             
             try {
-                // =============================================
-                // UPDATED FETCH CALL WITH BACKEND_URL
-                // =============================================
                 const response = await fetch(`${BACKEND_URL}/api/demo-brute-force`, {
                     method: 'POST',
                     headers: {
@@ -345,7 +476,6 @@
                     },
                     body: JSON.stringify({ email })
                 });
-                // =============================================
                 
                 if (!response.ok) {
                     throw new Error(`Server error: ${response.status}`);
@@ -363,7 +493,7 @@
                         <div class="password-result password-found">
                             ⚠️ VULNERABILITY DEMONSTRATED ⚠️<br>
                             Password found: <span style="font-size: 32px;">${data.results.password}</span><br>
-                            <small>This shows how easily 4-digit PINs can be cracked</small>
+                            <small>Cracked in ${data.results.tested} attempts, ${data.results.totalTime ? data.results.totalTime.toFixed(2) : 'N/A'} seconds</small>
                         </div>
                     `;
                 } else {
@@ -372,7 +502,7 @@
                     
                     passwordResult.innerHTML = `
                         <div class="password-result password-not-found">
-                            🔒 Password not found in demonstration${errorMsg}<br>
+                            🔒 Password not found in ${data.results?.tested || 0} attempts${errorMsg}<br>
                             <small>This time the PIN wasn't in our test set, but a full attack would test all 10,000 combinations</small>
                         </div>
                     `;
@@ -384,8 +514,9 @@
                         <li>Email tested: ${email}</li>
                         <li>Passwords tested: ${data.results?.tested || 0}</li>
                         <li>Possible combinations: 10,000 (0000 to 9999)</li>
-                        <li>Time to crack all combinations: ~2-5 minutes with automation</li>
-                        <li>Vulnerable Site: <code>https://vulnerable-site-noch.onrender.com</code></li>
+                        <li>Time taken: ${data.results?.totalTime ? data.results.totalTime.toFixed(2) + ' seconds' : 'N/A'}</li>
+                        <li>Speed: ${data.statistics?.attempts_per_second || 'N/A'} attempts/second</li>
+                        <li>Estimated time for full attack: ${data.statistics?.estimated_full_attack_minutes || 'N/A'} minutes</li>
                     </ul>
                 `;
                 
@@ -430,23 +561,244 @@
                     </div>
                 `;
                 
-                stats.innerHTML = `
-                    <h3>⚠️ Troubleshooting:</h3>
-                    <ul>
-                        <li>Check if backend is running: <code>${BACKEND_URL}/health</code></li>
-                        <li>Check browser console for CORS errors</li>
-                        <li>Ensure vulnerable site is accessible</li>
-                    </ul>
-                `;
-                
                 results.classList.add('show');
             }
         }
+        
+        // =============================================
+        // FULL BRUTE FORCE ATTACK
+        // =============================================
+        async function startFullBruteForce() {
+            const email = document.getElementById('email').value.trim();
+            
+            if (!email) {
+                alert('Please enter an email address');
+                return;
+            }
+            
+            if (!confirm('⚠️ FULL BRUTE FORCE ATTACK\n\n' +
+                        'This will test ALL 10,000 combinations (0000-9999).\n' +
+                        'Estimated time: 8-15 minutes.\n' +
+                        'Server resources will be used heavily.\n\n' +
+                        'Educational purpose only!\n\n' +
+                        'Continue?')) {
+                return;
+            }
+            
+            const demoBtn = document.getElementById('demoBtn');
+            demoBtn.disabled = true;
+            demoBtn.textContent = 'Starting FULL Attack...';
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/full-brute-force`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showFullAttackProgress(email);
+                    alert('✅ Full brute force attack started!\n\n' +
+                          'Testing ALL 10,000 combinations.\n' +
+                          'Estimated time: 8-15 minutes\n\n' +
+                          'Progress will be shown below.');
+                    
+                    // Start checking progress automatically
+                    startProgressChecking();
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Error starting full attack: ' + error.message);
+            } finally {
+                demoBtn.disabled = false;
+                demoBtn.textContent = 'Start Educational Demo';
+            }
+        }
+        
+        // =============================================
+        // PROGRESS TRACKING FUNCTIONS
+        // =============================================
+        function showFullAttackProgress(email) {
+            const progressDiv = document.getElementById('fullAttackProgress');
+            const attackEmail = document.getElementById('attackEmail');
+            
+            attackEmail.textContent = email;
+            progressDiv.classList.add('show');
+            
+            // Scroll to progress section
+            progressDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function hideFullAttackProgress() {
+            const progressDiv = document.getElementById('fullAttackProgress');
+            progressDiv.classList.remove('show');
+            
+            // Clear any existing interval
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+        }
+        
+        function startProgressChecking() {
+            // Clear existing interval
+            if (progressInterval) {
+                clearInterval(progressInterval);
+            }
+            
+            // Check progress every 5 seconds
+            progressInterval = setInterval(checkProgress, 5000);
+            
+            // Initial check
+            checkProgress();
+        }
+        
+        async function checkProgress() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/brute-force-progress`);
+                const data = await response.json();
+                
+                const progressFill = document.getElementById('progressFill');
+                const progressText = document.getElementById('progressText');
+                
+                if (data.active) {
+                    const percent = parseFloat(data.percentage);
+                    progressFill.style.width = percent + '%';
+                    
+                    progressText.innerHTML = `
+                        Progress: <strong>${data.percentage}</strong><br>
+                        Tested: ${data.progress.tested}/10,000 combinations<br>
+                        Current password: <code>${data.progress.currentPassword}</code><br>
+                        Elapsed: ${data.progress.startTime ? Math.floor((Date.now() - new Date(data.progress.startTime).getTime()) / 1000) : 'N/A'} seconds<br>
+                        Estimated time remaining: ${data.estimated_time_remaining}
+                    `;
+                } else {
+                    progressText.innerHTML = 'Attack completed or stopped.';
+                    progressFill.style.width = '100%';
+                    
+                    // Clear interval if attack is done
+                    if (progressInterval) {
+                        clearInterval(progressInterval);
+                        progressInterval = null;
+                    }
+                    
+                    // Show message if password was found
+                    if (data.progress.found) {
+                        setTimeout(() => {
+                            alert(`🎉 ATTACK COMPLETED!\n\nPassword found: ${data.progress.password}\n` +
+                                  `Attempts: ${data.progress.tested}\n` +
+                                  `Total time: ${data.progress.totalTime ? data.progress.totalTime.toFixed(2) + ' seconds' : 'N/A'}`);
+                        }, 500);
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking progress:', error);
+                const progressText = document.getElementById('progressText');
+                progressText.innerHTML = 'Error checking progress: ' + error.message;
+            }
+        }
+        
+        async function stopAttack() {
+            if (!confirm('Stop the brute force attack?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/stop-brute-force`, {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                alert('Attack stopped: ' + data.message);
+                
+                // Clear progress checking
+                if (progressInterval) {
+                    clearInterval(progressInterval);
+                    progressInterval = null;
+                }
+                
+            } catch (error) {
+                alert('Error stopping attack: ' + error.message);
+            }
+        }
+        
+        // =============================================
+        // TEST SPECIFIC PASSWORD
+        // =============================================
+        async function testSpecificPassword() {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('testPassword').value.trim();
+            const resultDiv = document.getElementById('passwordTestResult');
+            
+            if (!email) {
+                alert('Please enter an email address first');
+                return;
+            }
+            
+            if (!password || !/^\d{4}$/.test(password)) {
+                alert('Please enter a valid 4-digit PIN');
+                return;
+            }
+            
+            resultDiv.innerHTML = '<div style="color: #666;">Testing password... ⏳</div>';
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/test-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div style="color: #4CAF50; font-weight: bold;">
+                            ✅ PASSWORD CORRECT!
+                        </div>
+                        <div style="margin-top: 5px;">
+                            Password <code>${password}</code> is VALID for ${email}<br>
+                            <small>${data.message}</small>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div style="color: #f44336; font-weight: bold;">
+                            ❌ PASSWORD INCORRECT
+                        </div>
+                        <div style="margin-top: 5px;">
+                            Password <code>${password}</code> is NOT valid for ${email}<br>
+                            <small>${data.message || 'Try another password'}</small>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div style="color: #f44336;">
+                        ❌ Error testing password: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        // =============================================
+        // HELPER FUNCTIONS
+        // =============================================
         
         // Allow pressing Enter to start demo
         document.getElementById('email').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 startDemo();
+            }
+        });
+        
+        // Allow pressing Enter in password test field
+        document.getElementById('testPassword').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                testSpecificPassword();
             }
         });
         
@@ -461,8 +813,22 @@
                 }
             } catch (error) {
                 console.error('❌ Cannot connect to backend:', error.message);
+                alert('Warning: Cannot connect to backend server. Make sure it\'s running.');
             }
+            
+            // Update time estimate based on current email
+            document.getElementById('email').addEventListener('input', function() {
+                const email = this.value.trim();
+                if (email) {
+                    document.getElementById('attackEmail').textContent = email;
+                }
+            });
+        });
+        
+        // Pre-fill password test with known password for demo
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('testPassword').value = '1918';
         });
     </script>
 </body>
-    </html>
+</html>
